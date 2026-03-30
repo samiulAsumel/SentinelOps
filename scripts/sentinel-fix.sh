@@ -55,7 +55,7 @@ detect_linux_distro() {
 
 	# Set package manager commands
 	case $DISTRO_LIKE in
-	*deb* | *debiana* | *ubuntu*)
+	*debian* | *ubuntu*)
 		PKG_MANAGER="apt-get"
 		PKG_UPDATE="apt-get update"
 		PKG_INSTALL="apt-get install -y"
@@ -94,7 +94,7 @@ detect_linux_distro() {
 		PKG_UPGRADE="pacman -Syu --noconfirm"
 		PKG_AUTOREMOVE="pacman -Rns \$(pacman -Qdtq) --noconfirm 2>/dev/null || true"
 		;;
-	*suse* | *opensuse*)
+	*opensuse*)
 		PKG_MANAGER="zypper"
 		PKG_UPDATE="zypper refresh"
 		PKG_INSTALL="zypper install -y"
