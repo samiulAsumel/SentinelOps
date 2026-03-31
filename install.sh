@@ -106,6 +106,43 @@ create_directories() {
 	print_status "Directories created"
 }
 
+# Ensure /usr/local/bin is in sudoers secure_path
+fix_sudoers_path() {
+	local sudoers_file="/etc/sudoers"
+	local secure_path_line
+	secure_path_line=$(grep '^Defaults.*secure_path' "$sudoers_file" 2>/dev/null || true)
+
+	if [[ -z "$secure_path_line" ]]; then
+		print_warning "No secure_path found in sudoers, skipping"
+		return 0
+	fi
+
+	if echo "$secure_path_line" | grep -q '/usr/local/bin'; then
+		print_info "/usr/local/bin already in sudoers secure_path"
+		return 0
+	fi
+
+	print_info "Adding /usr/local/bin to sudoers secure_path..."
+	# Backup sudoers before editing
+	cp "$sudoers_file" "$sudoers_file.bak.$(date +%Y%m%d_%H%M%S)"
+
+	# Add /usr/local/bin to the end of secure_path
+	sed -i 's|^\(Defaults.*secure_path.*\)"$|\1:/usr/local/bin"|' "$sudoers_file"
+	# Handle case where closing quote is missing
+	if ! grep -q '/usr/local/bin' "$sudoers_file"; then
+		sed -i 's|^\(Defaults.*secure_path.*\)$|\1:/usr/local/bin|' "$sudoers_file"
+	fi
+
+	# Validate sudoers syntax
+	if visudo -c &>/dev/null; then
+		print_status "/usr/local/bin added to sudoers secure_path"
+	else
+		print_error "sudoers syntax error, restoring backup"
+		cp "$sudoers_file.bak."* "$sudoers_file" 2>/dev/null || true
+		return 1
+	fi
+}
+
 # Verify installation
 verify_installation() {
 	local success=true
@@ -143,6 +180,7 @@ main() {
 	verify_source
 	install_scripts
 	create_directories
+	fix_sudoers_path
 
 	echo ""
 	if verify_installation; then
